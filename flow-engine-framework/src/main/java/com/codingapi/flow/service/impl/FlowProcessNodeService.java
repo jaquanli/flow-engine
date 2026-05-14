@@ -242,15 +242,26 @@ public class FlowProcessNodeService {
         }
 
         private List<ProcessNode> sortByWorkflowNodeOrder(List<ProcessNode> processNodes) {
-            List<IFlowNode> workflowNodes = workflow.getNodes();
             Map<String, Integer> indexMap = new HashMap<>();
-            for (int i = 0; i < workflowNodes.size(); i++) {
-                indexMap.put(workflowNodes.get(i).getId(), i);
-            }
+            int[] counter = {0};
+            buildNodeIndexMap(workflow.getNodes(), indexMap, counter);
             return processNodes.stream()
                     .sorted(Comparator.comparingInt(
                             n -> indexMap.getOrDefault(n.getNodeId(), Integer.MAX_VALUE)))
                     .toList();
+        }
+
+        private void buildNodeIndexMap(List<IFlowNode> nodes, Map<String, Integer> indexMap, int[] counter) {
+            if (nodes == null || nodes.isEmpty()) {
+                return;
+            }
+            for (IFlowNode node : nodes) {
+                indexMap.put(node.getId(), counter[0]++);
+                List<IFlowNode> blocks = node.blocks();
+                if (blocks != null && !blocks.isEmpty()) {
+                    buildNodeIndexMap(blocks, indexMap, counter);
+                }
+            }
         }
     }
 
