@@ -27,6 +27,8 @@ import com.codingapi.flow.workflow.runtime.WorkflowRuntime;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -236,7 +238,19 @@ public class FlowProcessNodeService {
                     processNodeList.add(node);
                 }
             }
-            return processNodeList;
+            return sortByWorkflowNodeOrder(processNodeList);
+        }
+
+        private List<ProcessNode> sortByWorkflowNodeOrder(List<ProcessNode> processNodes) {
+            List<IFlowNode> workflowNodes = workflow.getNodes();
+            Map<String, Integer> indexMap = new HashMap<>();
+            for (int i = 0; i < workflowNodes.size(); i++) {
+                indexMap.put(workflowNodes.get(i).getId(), i);
+            }
+            return processNodes.stream()
+                    .sorted(Comparator.comparingInt(
+                            n -> indexMap.getOrDefault(n.getNodeId(), Integer.MAX_VALUE)))
+                    .toList();
         }
     }
 
