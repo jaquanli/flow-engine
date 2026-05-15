@@ -29,7 +29,6 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -116,20 +115,27 @@ public class FlowProcessNodeService {
 
         this.loadNextNode(backupId);
 
+        int seqIndex = 1;
+        for (ProcessNode node : this.nodeList) {
+            node.setSeqNo(String.valueOf(seqIndex++));
+        }
+
         return this.nodeList;
     }
 
     private List<ProcessNode> buildHistoryNodes(List<FlowRecord> records) {
-        Map<String, ProcessNode> nodeMap = new LinkedHashMap<>();
+        List<ProcessNode> result = new ArrayList<>();
+        ProcessNode lastNode = null;
         for (FlowRecord record : records) {
-            ProcessNode existing = nodeMap.get(record.getNodeId());
-            if (existing != null) {
-                existing.addOperator(new ProcessNode.FlowOperatorBody(record));
+            if (lastNode != null && lastNode.getNodeId().equals(record.getNodeId())) {
+                lastNode.addOperator(new ProcessNode.FlowOperatorBody(record));
             } else {
-                nodeMap.put(record.getNodeId(), new ProcessNode(record, this.workflow));
+                ProcessNode newNode = new ProcessNode(record, this.workflow);
+                result.add(newNode);
+                lastNode = newNode;
             }
         }
-        return new ArrayList<>(nodeMap.values());
+        return result;
     }
 
 
