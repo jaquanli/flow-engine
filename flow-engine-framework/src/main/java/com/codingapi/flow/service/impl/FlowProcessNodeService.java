@@ -2,6 +2,7 @@ package com.codingapi.flow.service.impl;
 
 import com.codingapi.flow.action.IFlowAction;
 import com.codingapi.flow.action.actions.PassAction;
+import com.codingapi.flow.cache.FlowOperatorLocalThreadCache;
 import com.codingapi.flow.exception.FlowNotFoundException;
 import com.codingapi.flow.form.FormData;
 import com.codingapi.flow.manager.ActionManager;
@@ -94,30 +95,31 @@ public class FlowProcessNodeService {
         return flowOperator;
     }
 
-    private void fetchFlowRecordOperatorList(){
+    private void fetchFlowRecordOperatorList() {
         List<Long> operatorIds = new ArrayList<>();
 
-        for(FlowRecord flowRecord:this.recordList){
-            if(!operatorIds.contains(flowRecord.getCreateOperatorId())){
+        for (FlowRecord flowRecord : this.recordList) {
+            if (!operatorIds.contains(flowRecord.getCreateOperatorId())) {
                 operatorIds.add(flowRecord.getCreateOperatorId());
             }
-            if(!operatorIds.contains(flowRecord.getCurrentOperatorId())){
+            if (!operatorIds.contains(flowRecord.getCurrentOperatorId())) {
                 operatorIds.add(flowRecord.getCurrentOperatorId());
             }
-            if(!operatorIds.contains(flowRecord.getSubmitOperatorId())){
+            if (!operatorIds.contains(flowRecord.getSubmitOperatorId())) {
                 operatorIds.add(flowRecord.getSubmitOperatorId());
             }
         }
 
         List<IFlowOperator> operatorList = this.repositoryHolder.findOperatorByIds(operatorIds);
-        if(operatorList!=null && !operatorList.isEmpty()){
-            for(IFlowOperator operator:operatorList){
+        if (operatorList != null && !operatorList.isEmpty()) {
+            for (IFlowOperator operator : operatorList) {
                 this.recordOperatorMap.put(operator.getUserId(), operator);
             }
         }
     }
 
     public List<ProcessNode> processNodes() {
+        FlowOperatorLocalThreadCache.getInstance().clear();
         // load history data
         if (this.flowRecord != null) {
             this.loadHistoryData();
@@ -151,9 +153,6 @@ public class FlowProcessNodeService {
     }
 
 
-
-
-
     private List<FlowRecord> loadLatestRecords() {
         List<FlowRecord> flowRecords = new ArrayList<>();
         for (FlowRecord flowRecord : this.recordList) {
@@ -169,7 +168,11 @@ public class FlowProcessNodeService {
         if (this.flowRecord == null) {
             IFlowNode currentNode = this.workflow.getStartNode();
             IFlowOperator currentOperator = this.loadRecordOperator(this.request.getOperatorId());
-            FlowSession flowSession = this.buildFlowSession(currentNode, currentOperator, currentOperator, currentOperator, 0);
+            FlowSession flowSession = this.buildFlowSession(null, currentNode, currentOperator, currentOperator, currentOperator, 0);
+            List<FlowRecord> flowRecords = currentNode.generateCurrentRecords(flowSession);
+            FlowRecord startRecord = flowRecords.get(0);
+            flowSession.setCurrentRecord(startRecord);
+
             this.addFlowNode(currentNode, flowSession);
             this.fetchFlowNode(flowSession);
         } else {
@@ -181,7 +184,7 @@ public class FlowProcessNodeService {
                     IFlowOperator createOperator = this.loadRecordOperator(todoRecord.getCreateOperatorId());
                     IFlowOperator submitOperator = this.loadRecordOperator(todoRecord.getSubmitOperatorId());
 
-                    FlowSession flowSession = this.buildFlowSession(currentNode, currentOperator, createOperator, submitOperator, todoRecord.getWorkRuntimeId());
+                    FlowSession flowSession = this.buildFlowSession(todoRecord, currentNode, currentOperator, createOperator, submitOperator, todoRecord.getWorkRuntimeId());
                     this.fetchFlowNode(flowSession);
                 }
             }
@@ -189,11 +192,13 @@ public class FlowProcessNodeService {
     }
 
 
-    private FlowSession buildFlowSession(IFlowNode currentNode,
-                                         IFlowOperator currentOperator,
-                                         IFlowOperator createdOperator,
-                                         IFlowOperator submitOperator,
-                                         long backupId) {
+    private FlowSession buildFlowSession(
+            FlowRecord flowRecord,
+            IFlowNode currentNode,
+            IFlowOperator currentOperator,
+            IFlowOperator createdOperator,
+            IFlowOperator submitOperator,
+            long backupId) {
         ActionManager actionManager = currentNode.actionManager();
         IFlowAction flowAction = actionManager.getAction(PassAction.class);
         FormData formData = new FormData(this.workflow.getForm());
@@ -208,7 +213,7 @@ public class FlowProcessNodeService {
                 currentNode,
                 flowAction,
                 formData,
-                this.flowRecord,
+                flowRecord,
                 new ArrayList<>(),
                 backupId,
                 FlowAdvice.nullFlowAdvice()
