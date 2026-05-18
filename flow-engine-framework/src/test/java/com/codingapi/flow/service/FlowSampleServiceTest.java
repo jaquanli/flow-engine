@@ -13,13 +13,10 @@ import com.codingapi.flow.form.FlowFormBuilder;
 import com.codingapi.flow.form.permission.PermissionType;
 import com.codingapi.flow.node.nodes.*;
 import com.codingapi.flow.pojo.body.FlowAdviceBody;
-import com.codingapi.flow.pojo.request.FlowActionRequest;
-import com.codingapi.flow.pojo.request.FlowCreateRequest;
-import com.codingapi.flow.pojo.request.FlowRevokeRequest;
-import com.codingapi.flow.pojo.request.FlowUrgeRequest;
+import com.codingapi.flow.pojo.request.*;
 import com.codingapi.flow.pojo.response.ActionResponse;
+import com.codingapi.flow.pojo.response.ProcessNode;
 import com.codingapi.flow.record.FlowRecord;
-import com.codingapi.flow.script.node.NodeTitleScript;
 import com.codingapi.flow.script.runtime.FlowScriptContext;
 import com.codingapi.flow.script.runtime.IBeanFactory;
 import com.codingapi.flow.strategy.node.*;
@@ -806,6 +803,11 @@ class FlowSampleServiceTest {
         List<FlowRecord> records = factory.flowRecordRepository.findProcessRecords(bossRecordList.get(0).getProcessId());
         assertEquals(4, records.size());
         assertEquals(4, records.stream().filter(FlowRecord::isFinish).toList().size());
+
+        List<ProcessNode> nodeList = factory.flowService.processNodes(new FlowProcessNodeRequest(bossRecordList.get(0).getId(), boss.getUserId(), data));
+        assertEquals(5, nodeList.size());
+        assertEquals(5, nodeList.stream().filter(ProcessNode::isHistory).toList().size());
+
     }
 
 
@@ -1446,7 +1448,7 @@ class FlowSampleServiceTest {
         factory.flowService.action(userRequest);
 
 
-        List<FlowRecord>  boosRecordList = factory.flowRecordRepository.findTodoByOperator(boss.getUserId());
+        List<FlowRecord> boosRecordList = factory.flowRecordRepository.findTodoByOperator(boss.getUserId());
         assertEquals(1, boosRecordList.size());
 
         List<IFlowAction> bigBossActions = bigBossApprovalNode.actionManager().getActions();

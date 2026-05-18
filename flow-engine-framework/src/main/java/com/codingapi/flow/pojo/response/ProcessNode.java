@@ -6,7 +6,9 @@ import com.codingapi.flow.record.FlowRecord;
 import com.codingapi.flow.strategy.node.MultiOperatorAuditStrategy;
 import com.codingapi.flow.strategy.node.OperatorSelectType;
 import com.codingapi.flow.workflow.Workflow;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -61,11 +63,11 @@ public class ProcessNode {
         return this.approveState == ApproveState.PASS || this.approveState == ApproveState.ERROR;
     }
 
-    public void addFlowRecordOperator(FlowRecord record) {
+    public void addFlowRecordOperator(FlowRecord record, IFlowOperator flowOperator) {
         if (this.operators == null) {
             this.operators = new ArrayList<>();
         }
-        this.operators.add(new FlowOperatorBody(record));
+        this.operators.add(new FlowOperatorBody(record, flowOperator));
     }
 
     public enum OperatorStrategy {
@@ -95,7 +97,7 @@ public class ProcessNode {
         ERROR
     }
 
-    public void resetApproveState(FlowRecord flowRecord) {
+    private void resetApproveState(FlowRecord flowRecord) {
         if (flowRecord.isDone()) {
             this.approveState = ApproveState.PASS;
         }
@@ -122,21 +124,43 @@ public class ProcessNode {
         }
     }
 
+    @Getter
+    @AllArgsConstructor
+    public static class FlowRecordOperator {
+        private final FlowRecord flowRecord;
+        private final IFlowOperator flowOperator;
+    }
 
-    public static ProcessNode createByRecord(FlowRecord flowRecord, Workflow workflow) {
-        IFlowNode flowNode = workflow.getFlowNode(flowRecord.getNodeId());
+
+    public static ProcessNode createByRecord(List<FlowRecordOperator> recordOperatorList, Workflow workflow) {
+
+        FlowRecord currentRecord = null;
+        for (FlowRecordOperator flowRecordOperator : recordOperatorList) {
+            if (flowRecordOperator.getFlowRecord().isTodo()) {
+                currentRecord = flowRecordOperator.getFlowRecord();
+            }
+        }
+
+        if (currentRecord == null) {
+            currentRecord = recordOperatorList.get(0).getFlowRecord();
+        }
+
+
+        IFlowNode flowNode = workflow.getFlowNode(currentRecord.getNodeId());
 
         ProcessNode processNode = new ProcessNode();
-        processNode.setId(String.valueOf(flowRecord.getId()));
+        processNode.setId(String.valueOf(currentRecord.getId()));
         processNode.setNodeId(flowNode.getId());
         processNode.setNodeName(flowNode.getName());
         processNode.setNodeType(flowNode.getType());
-        processNode.resetApproveState(flowRecord);
+        processNode.resetApproveState(currentRecord);
         processNode.resetApproveStrategy(flowNode);
         processNode.setOperatorStrategy(OperatorStrategy.OPERATOR_LIST);
 
         List<FlowOperatorBody> flowOperatorBodyList = new ArrayList<>();
-        flowOperatorBodyList.add(new FlowOperatorBody(flowRecord));
+        for (FlowRecordOperator flowOperator : recordOperatorList) {
+            flowOperatorBodyList.add(new FlowOperatorBody(flowOperator.getFlowRecord(), flowOperator.getFlowOperator()));
+        }
         processNode.setOperators(flowOperatorBodyList);
 
         return processNode;
@@ -212,22 +236,23 @@ public class ProcessNode {
         /**
          * 审批人
          */
-        private FlowOperator flowOperator;
+        private IFlowOperator flowOperator;
         /**
          * 审批时间
          */
         private long approveTime;
 
-        public FlowOperatorBody(FlowRecord flowRecord) {
+        public FlowOperatorBody(FlowRecord flowRecord, IFlowOperator flowOperator) {
             this.advice = flowRecord.getAdvice();
             this.signKey = flowRecord.getSignKey();
             this.approveTime = flowRecord.getCreateTime();
             this.actionName = flowRecord.getActionName();
-            this.flowOperator = new FlowOperator(flowRecord.getCurrentOperatorId(), flowRecord.getCurrentOperatorName());
+            this.actionType = flowRecord.getActionType();
+            this.flowOperator = flowOperator;
         }
 
         public FlowOperatorBody(IFlowOperator flowOperator) {
-            this.flowOperator = new FlowOperator(flowOperator);
+            this.flowOperator = flowOperator;
         }
 
     }

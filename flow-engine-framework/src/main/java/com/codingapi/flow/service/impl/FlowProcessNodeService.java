@@ -24,10 +24,8 @@ import com.codingapi.flow.strategy.node.OperatorSelectType;
 import com.codingapi.flow.workflow.Workflow;
 import com.codingapi.flow.workflow.runtime.WorkflowRuntime;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * 流程节点记录服务
@@ -47,15 +45,18 @@ public class FlowProcessNodeService {
     private Workflow workflow;
     // 流程节点记录
     private final List<ProcessNode> nodeList;
+    // 流程审批记录列表
+    private final Map<Long, IFlowOperator> recordOperatorMap;
 
 
     public FlowProcessNodeService(FlowProcessNodeRequest request, IRepositoryHolder repositoryHolder) {
         this.request = request;
-        this.currentOperator = repositoryHolder.getOperatorById(request.getOperatorId());
         this.flowRecordService = repositoryHolder.getFlowRecordService();
         this.workflowService = repositoryHolder.getWorkflowService();
         this.repositoryHolder = repositoryHolder;
         this.nodeList = new ArrayList<>();
+        this.recordOperatorMap = new HashMap<>();
+        this.currentOperator = this.loadRecordOperator(request.getOperatorId());
         this.initData();
     }
 
@@ -79,12 +80,25 @@ public class FlowProcessNodeService {
         return !id.matches("^[0-9]+$");
     }
 
+    private IFlowOperator loadRecordOperator(long operatorId) {
+        IFlowOperator flowOperator = this.recordOperatorMap.get(operatorId);
+        if (flowOperator != null) {
+            return flowOperator;
+        }
+
+        flowOperator = this.repositoryHolder.getOperatorById(operatorId);
+        if (flowOperator != null) {
+            this.recordOperatorMap.put(flowOperator.getUserId(), flowOperator);
+        }
+        return flowOperator;
+    }
+
 
     public List<ProcessNode> processNodes() {
         // load history data
         if (this.flowRecord != null) {
             this.loadHistoryData();
-            if (this.flowRecord.isDone()) {
+            if (this.flowRecord.isFinish()) {
                 // load end node
                 this.loadEndNode(this.flowRecord.isFinish());
                 return nodeList;
@@ -100,17 +114,8 @@ public class FlowProcessNodeService {
 
     private void loadHistoryData() {
         List<FlowRecord> allRecords = flowRecordService.findFlowRecordByProcessId(this.flowRecord.getProcessId());
-        Map<String, ProcessNode> nodeMap = new LinkedHashMap<>();
-        for (FlowRecord record : allRecords) {
-            ProcessNode existing = nodeMap.get(record.getNodeId());
-            if (existing != null) {
-                existing.addFlowRecordOperator(record);
-                existing.resetApproveState(record);
-            } else {
-                nodeMap.put(record.getNodeId(), ProcessNode.createByRecord(record, this.workflow));
-            }
-        }
-        this.nodeList.addAll(nodeMap.values());
+        FlowRecordOrderService orderService = new FlowRecordOrderService(allRecords, this::loadRecordOperator, flowRecords -> nodeList.add(ProcessNode.createByRecord(flowRecords, workflow)));
+        orderService.fetch(0);
     }
 
     private void loadEndNode(boolean finish) {
@@ -130,8 +135,8 @@ public class FlowProcessNodeService {
             if (todoRecords != null && !todoRecords.isEmpty()) {
                 for (FlowRecord todoRecord : todoRecords) {
                     IFlowNode currentNode = this.workflow.getFlowNode(todoRecord.getNodeId());
-                    IFlowOperator createOperator = this.repositoryHolder.getOperatorById(todoRecord.getCreateOperatorId());
-                    IFlowOperator submitOperator = this.repositoryHolder.getOperatorById(todoRecord.getSubmitOperatorId());
+                    IFlowOperator createOperator = this.loadRecordOperator(todoRecord.getCreateOperatorId());
+                    IFlowOperator submitOperator = this.loadRecordOperator(todoRecord.getSubmitOperatorId());
 
                     FlowSession flowSession = this.buildFlowSession(currentNode, currentOperator, createOperator, submitOperator, todoRecord.getWorkRuntimeId());
                     this.fetchFlowNode(flowSession);
@@ -201,6 +206,52 @@ public class FlowProcessNodeService {
                 }
             }
         }
+    }
+
+
+    private interface IFlowOperatorGateway {
+
+        IFlowOperator getFlowOperator(long operatorId);
+    }
+
+    private static class FlowRecordOrderService {
+
+        private final List<FlowRecord> flowRecords;
+
+        private final Consumer<List<ProcessNode.FlowRecordOperator>> consumer;
+
+        private final IFlowOperatorGateway flowOperatorGateway;
+
+
+        public FlowRecordOrderService(List<FlowRecord> flowRecords, IFlowOperatorGateway flowOperatorGateway, Consumer<List<ProcessNode.FlowRecordOperator>> consumer) {
+            this.consumer = consumer;
+            this.flowOperatorGateway = flowOperatorGateway;
+            this.flowRecords = flowRecords.stream().sorted(Comparator.comparing(FlowRecord::getId)).toList();
+        }
+
+
+        private List<FlowRecord> getNextRecords(long formId) {
+            List<FlowRecord> recordList = new ArrayList<>();
+            for (FlowRecord record : this.flowRecords) {
+                if (record.getFromId() == formId) {
+                    recordList.add(record);
+                }
+            }
+            return recordList;
+        }
+
+
+        public void fetch(long formId) {
+            List<FlowRecord> batchList = this.getNextRecords(formId);
+            if (!batchList.isEmpty()) {
+                this.consumer.accept(batchList.stream().map(record -> new ProcessNode.FlowRecordOperator(record, flowOperatorGateway.getFlowOperator(record.getCurrentOperatorId()))).toList());
+
+                for (FlowRecord item : batchList) {
+                    this.fetch(item.getId());
+                }
+            }
+        }
+
     }
 
 }
