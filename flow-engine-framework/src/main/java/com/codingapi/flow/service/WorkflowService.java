@@ -12,7 +12,9 @@ import com.codingapi.flow.workflow.runtime.WorkflowRuntime;
 import lombok.AllArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 流程设计器服务
@@ -20,9 +22,17 @@ import java.util.List;
 @AllArgsConstructor
 public class WorkflowService {
 
+    private static final int WORKFLOW_RUNTIME_CACHE_SIZE = 256;
+
     private final WorkflowVersionRepository workflowVersionRepository;
     private final WorkflowRepository workflowRepository;
     private final WorkflowRuntimeRepository workflowRuntimeRepository;
+    private final Map<Long, Workflow> workflowRuntimeCache = new LinkedHashMap<>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Long, Workflow> eldest) {
+            return size() > WORKFLOW_RUNTIME_CACHE_SIZE;
+        }
+    };
 
 
     /**
@@ -78,6 +88,31 @@ public class WorkflowService {
      */
     public WorkflowRuntime getWorkflowRuntime(long runtimeId) {
         return workflowRuntimeRepository.get(runtimeId);
+    }
+
+    /**
+     * 获取运行时流程对象，并缓存解析后的 Workflow。
+     *
+     * @param runtimeId 运行时id
+     * @return 流程对象
+     */
+    public Workflow getRuntimeWorkflow(long runtimeId) {
+        synchronized (workflowRuntimeCache) {
+            Workflow workflow = workflowRuntimeCache.get(runtimeId);
+            if (workflow != null) {
+                return workflow;
+            }
+        }
+
+        WorkflowRuntime workflowRuntime = workflowRuntimeRepository.get(runtimeId);
+        if (workflowRuntime == null) {
+            return null;
+        }
+        Workflow workflow = workflowRuntime.toWorkflow();
+        synchronized (workflowRuntimeCache) {
+            workflowRuntimeCache.put(runtimeId, workflow);
+        }
+        return workflow;
     }
 
     /**

@@ -5,7 +5,11 @@ import lombok.Data;
 
 @Data
 @Entity
-@Table(name = "t_flow_record")
+@Table(name = "t_flow_record", indexes = {
+        @Index(name = "idx_flow_record_process_id", columnList = "processId"),
+        @Index(name = "idx_flow_record_current_operator_id", columnList = "currentOperatorId"),
+        @Index(name = "idx_flow_record_work_runtime_id", columnList = "workRuntimeId")
+})
 public class FlowRecordEntity {
     /**
      * 记录id

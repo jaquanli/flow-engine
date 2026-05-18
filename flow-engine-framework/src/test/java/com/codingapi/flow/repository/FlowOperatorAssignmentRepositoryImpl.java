@@ -22,4 +22,16 @@ public class FlowOperatorAssignmentRepositoryImpl implements FlowOperatorAssignm
     public List<Long> findOperatorIds(String processId, String nodeId) {
         return cache.getOrDefault(key(processId, nodeId), Collections.emptyList());
     }
+
+    @Override
+    public Map<String, List<Long>> findOperatorIds(String processId) {
+        Map<String, List<Long>> result = new HashMap<>();
+        String prefix = processId + ":";
+        for (Map.Entry<String, List<Long>> entry : cache.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                result.put(entry.getKey().substring(prefix.length()), entry.getValue());
+            }
+        }
+        return result;
+    }
 }

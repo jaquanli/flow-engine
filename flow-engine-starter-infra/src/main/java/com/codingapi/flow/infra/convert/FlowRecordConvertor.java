@@ -2,6 +2,7 @@ package com.codingapi.flow.infra.convert;
 
 import com.codingapi.flow.infra.entity.FlowRecordEntity;
 import com.codingapi.flow.infra.entity.convert.MapConvertor;
+import com.codingapi.flow.infra.jpa.projection.FlowRecordSummary;
 import com.codingapi.flow.record.FlowRecord;
 
 public class FlowRecordConvertor {
@@ -58,6 +59,70 @@ public class FlowRecordConvertor {
                 entity.getParallelId(),
                 entity.getParallelBranchNodeId(),
                 entity.getParallelBranchTotal());
+    }
+
+    public static FlowRecord convert(FlowRecordSummary summary) {
+        if (summary == null) {
+            return null;
+        }
+        return new FlowRecord(number(summary.getId()),
+                number(summary.getWorkRuntimeId()),
+                summary.getWorkTitle(),
+                summary.getWorkCode(),
+                summary.getNodeId(),
+                summary.getNodeType(),
+                summary.getNodeName(),
+                number(summary.getFromId()),
+                number(summary.getParentId()),
+                null,
+                summary.getTitle(),
+                number(summary.getReadTime()),
+                summary.getProcessId(),
+                summary.getActionId(),
+                summary.getActionType(),
+                summary.getActionName(),
+                summary.getAdvice(),
+                summary.getSignKey(),
+                number(summary.getCurrentOperatorId()),
+                summary.getCurrentOperatorName(),
+                number(summary.getSubmitOperatorId()),
+                summary.getSubmitOperatorName(),
+                number(summary.getForwardOperatorId()),
+                summary.getForwardOperatorName(),
+                summary.getReturnNodeId(),
+                number(summary.getNodeOrder()),
+                flag(summary.getHidden()),
+                flag(summary.getRevoked()),
+                flag(summary.getNotify()),
+                number(summary.getRecordState()),
+                number(summary.getFlowState()),
+                number(summary.getUpdateTime()),
+                number(summary.getCreateTime()),
+                number(summary.getFinishTime()),
+                flag(summary.getReadable()),
+                number(summary.getCreateOperatorId()),
+                summary.getCreateOperatorName(),
+                summary.getErrMessage(),
+                number(summary.getTimeoutTime()),
+                flag(summary.getMergeable()),
+                number(summary.getInterferedOperatorId()),
+                summary.getInterferedOperatorName(),
+                number(summary.getDelegateId()),
+                summary.getParallelId(),
+                summary.getParallelBranchNodeId(),
+                number(summary.getParallelBranchTotal()));
+    }
+
+    private static long number(Long value) {
+        return value == null ? 0 : value;
+    }
+
+    private static int number(Integer value) {
+        return value == null ? 0 : value;
+    }
+
+    private static boolean flag(Boolean value) {
+        return Boolean.TRUE.equals(value);
     }
 
     public static FlowRecordEntity convert(FlowRecord record) {

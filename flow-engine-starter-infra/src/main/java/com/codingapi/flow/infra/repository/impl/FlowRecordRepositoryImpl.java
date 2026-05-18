@@ -20,6 +20,11 @@ public class FlowRecordRepositoryImpl implements FlowRecordRepository {
     }
 
     @Override
+    public FlowRecord getProcessNodeRecord(long id) {
+        return FlowRecordConvertor.convert(flowRecordEntityRepository.getProcessNodeRecordById(id));
+    }
+
+    @Override
     public List<FlowRecord> findByIds(List<Long> ids) {
         return flowRecordEntityRepository.findByIds(ids).stream()
                 .map(FlowRecordConvertor::convert)
@@ -56,6 +61,14 @@ public class FlowRecordRepositoryImpl implements FlowRecordRepository {
     @Override
     public List<FlowRecord> findProcessRecords(String processId) {
         return flowRecordEntityRepository.findProcessIdRecords(processId)
+                .stream()
+                .map(FlowRecordConvertor::convert)
+                .toList();
+    }
+
+    @Override
+    public List<FlowRecord> findProcessNodeRecords(String processId) {
+        return flowRecordEntityRepository.findProcessNodeRecords(processId)
                 .stream()
                 .map(FlowRecordConvertor::convert)
                 .toList();

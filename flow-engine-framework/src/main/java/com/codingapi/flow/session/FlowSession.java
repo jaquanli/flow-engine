@@ -17,6 +17,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -94,6 +96,8 @@ public class FlowSession {
     @Getter
     private final FlowAdvice advice;
 
+    private final Map<String, Map<String, List<Long>>> operatorAssignmentCache;
+
 
     public FlowSession(IRepositoryHolder repositoryHolder,
                        IFlowOperator currentOperator,
@@ -107,6 +111,23 @@ public class FlowSession {
                        List<FlowRecord> currentNodeRecords,
                        long workflowRuntimeId,
                        FlowAdvice advice) {
+        this(repositoryHolder, currentOperator, createdOperator, submitOperator, workflow, currentNode, currentAction,
+                formData, currentRecord, currentNodeRecords, workflowRuntimeId, advice, new HashMap<>());
+    }
+
+    private FlowSession(IRepositoryHolder repositoryHolder,
+                        IFlowOperator currentOperator,
+                        IFlowOperator createdOperator,
+                        IFlowOperator submitOperator,
+                        Workflow workflow,
+                        IFlowNode currentNode,
+                        IFlowAction currentAction,
+                        FormData formData,
+                        FlowRecord currentRecord,
+                        List<FlowRecord> currentNodeRecords,
+                        long workflowRuntimeId,
+                        FlowAdvice advice,
+                        Map<String, Map<String, List<Long>>> operatorAssignmentCache) {
         this.repositoryHolder = repositoryHolder;
         this.currentOperator = currentOperator;
         this.workflow = workflow;
@@ -119,6 +140,7 @@ public class FlowSession {
         this.advice = advice;
         this.createdOperator = createdOperator;
         this.submitOperator = submitOperator;
+        this.operatorAssignmentCache = operatorAssignmentCache;
     }
 
 
@@ -309,7 +331,8 @@ public class FlowSession {
      * @return 新的会话
      */
     public FlowSession updateSession(IFlowNode currentNode) {
-        return new FlowSession(repositoryHolder,currentOperator,createdOperator,submitOperator, workflow, currentNode, currentAction, formData, currentRecord, currentNodeRecords, workflowRuntimeId, advice);
+        return new FlowSession(repositoryHolder, currentOperator, createdOperator, submitOperator, workflow, currentNode,
+                currentAction, formData, currentRecord, currentNodeRecords, workflowRuntimeId, advice, operatorAssignmentCache);
     }
 
 
@@ -320,7 +343,8 @@ public class FlowSession {
      * @return 新的会话
      */
     public FlowSession updateSession(IFlowAction currentAction) {
-        return new FlowSession(repositoryHolder,currentOperator,createdOperator,submitOperator, workflow, currentNode, currentAction, formData, currentRecord, currentNodeRecords, workflowRuntimeId, advice);
+        return new FlowSession(repositoryHolder, currentOperator, createdOperator, submitOperator, workflow, currentNode,
+                currentAction, formData, currentRecord, currentNodeRecords, workflowRuntimeId, advice, operatorAssignmentCache);
     }
 
     /**
@@ -330,7 +354,8 @@ public class FlowSession {
      * @return 新的会话
      */
     public FlowSession updateSession(IFlowOperator currentOperator) {
-        return new FlowSession(repositoryHolder,currentOperator,createdOperator,submitOperator, workflow, currentNode, currentAction, formData, currentRecord, currentNodeRecords, workflowRuntimeId, advice);
+        return new FlowSession(repositoryHolder, currentOperator, createdOperator, submitOperator, workflow, currentNode,
+                currentAction, formData, currentRecord, currentNodeRecords, workflowRuntimeId, advice, operatorAssignmentCache);
     }
 
     /**
@@ -339,5 +364,23 @@ public class FlowSession {
      */
     public IFlowNode getNode(String nodeId) {
         return this.workflow.getFlowNode(nodeId);
+    }
+
+    public List<Long> findAssignedOperatorIds(String processId, String nodeId) {
+        if (processId == null || nodeId == null) {
+            return Collections.emptyList();
+        }
+
+        if (operatorAssignmentCache.containsKey(processId)) {
+            return operatorAssignmentCache.get(processId).getOrDefault(nodeId, Collections.emptyList());
+        }
+
+        Map<String, List<Long>> assignments = repositoryHolder.findAssignedOperatorIds(processId);
+        if (assignments == null) {
+            return repositoryHolder.findAssignedOperatorIds(processId, nodeId);
+        }
+
+        operatorAssignmentCache.put(processId, assignments);
+        return assignments.getOrDefault(nodeId, Collections.emptyList());
     }
 }

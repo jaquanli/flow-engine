@@ -8,7 +8,9 @@ import lombok.AllArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public class FlowOperatorAssignmentRepositoryImpl implements FlowOperatorAssignmentRepository {
@@ -30,5 +32,15 @@ public class FlowOperatorAssignmentRepositoryImpl implements FlowOperatorAssignm
         return jpa.findByProcessIdAndNodeId(processId, nodeId)
                 .map(e -> JSON.parseArray(e.getOperatorIds(), Long.class))
                 .orElse(Collections.emptyList());
+    }
+
+    @Override
+    public Map<String, List<Long>> findOperatorIds(String processId) {
+        return jpa.findByProcessId(processId)
+                .stream()
+                .collect(Collectors.toMap(
+                        FlowOperatorAssignmentEntity::getNodeId,
+                        e -> JSON.parseArray(e.getOperatorIds(), Long.class)
+                ));
     }
 }

@@ -40,17 +40,17 @@ public class ProcessNode {
     private String nodeType;
 
     /**
-     * 是否呈现节点
+     * 审批策略（SEQUENCE:循序提交、MERGE:合并审核、ANY:任意审核、RANDOM_ONE:随机一人）
      */
     private MultiOperatorAuditStrategy.Type approveStrategy;
 
     /**
-     * 审批状态
+     * 审批状态（PASS:审批通过、PROCESSING:审批中、PENDING:未审批、ERROR:审批错误）
      */
     private ApproveState approveState;
 
     /**
-     * 人员模式
+     * 人员模式（OPERATOR_LIST:指定人员、INITIATOR_SELECT:发起人设定、APPROVER_SELECT:审批人设定、NO_OPERATOR:无人员设置）
      */
     private OperatorStrategy operatorStrategy;
 

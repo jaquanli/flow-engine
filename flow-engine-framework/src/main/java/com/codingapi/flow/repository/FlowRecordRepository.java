@@ -17,6 +17,16 @@ public interface FlowRecordRepository {
     FlowRecord get(long id);
 
     /**
+     * 获取流程节点展示所需的轻量流程记录，不要求加载表单大字段
+     *
+     * @param id 流程id
+     * @return 流程记录
+     */
+    default FlowRecord getProcessNodeRecord(long id) {
+        return get(id);
+    }
+
+    /**
      * 批量获取流程详细
      * @param ids 流程id列表
      * @return 批量流程记录
@@ -58,6 +68,16 @@ public interface FlowRecordRepository {
      * @return 记录列表
      */
     List<FlowRecord> findProcessRecords(String processId);
+
+    /**
+     * 查询流程节点展示所需的轻量流程记录列表，不要求加载表单大字段
+     *
+     * @param processId 流程id
+     * @return 记录列表
+     */
+    default List<FlowRecord> findProcessNodeRecords(String processId) {
+        return findProcessRecords(processId);
+    }
 
     /**
      * 查询所有最新的待办记录

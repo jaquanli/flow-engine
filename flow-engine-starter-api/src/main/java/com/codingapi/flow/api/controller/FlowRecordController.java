@@ -15,6 +15,7 @@ import com.codingapi.springboot.framework.dto.response.SingleResponse;
 import com.codingapi.springboot.framework.user.UserContext;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -23,6 +24,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @RestController
 @RequestMapping("/api/cmd/record")
 @AllArgsConstructor
+@Slf4j
 public class FlowRecordController {
 
     private final FlowService flowService;
@@ -62,10 +64,20 @@ public class FlowRecordController {
 
     @PostMapping("/processNodes")
     public MultiResponse<ProcessNode> processNodes(@RequestBody FlowProcessNodeRequest request) {
+        long start = System.currentTimeMillis();
         FlowService flowService = this.loadFlowService();
+        long loadServiceAt = System.currentTimeMillis();
         long operatorId = loadCurrentOperatorId();
+        long loadOperatorAt = System.currentTimeMillis();
         request.setOperatorId(operatorId);
-        return MultiResponse.of(flowService.processNodes(request));
+        MultiResponse<ProcessNode> response = MultiResponse.of(flowService.processNodes(request));
+        long processAt = System.currentTimeMillis();
+        log.debug("processNodes controller loadService cost: {}ms, loadOperator cost: {}ms, flowService cost: {}ms, controller total cost: {}ms",
+                loadServiceAt - start,
+                loadOperatorAt - loadServiceAt,
+                processAt - loadOperatorAt,
+                processAt - start);
+        return response;
     }
 
     @PostMapping("/create")

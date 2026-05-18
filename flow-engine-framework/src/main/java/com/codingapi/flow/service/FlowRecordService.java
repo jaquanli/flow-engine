@@ -8,7 +8,9 @@ import com.codingapi.flow.repository.FlowTodoMergeRepository;
 import com.codingapi.flow.repository.FlowTodoRecordRepository;
 import lombok.AllArgsConstructor;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  *  流程记录服务对象
@@ -16,9 +18,23 @@ import java.util.List;
 @AllArgsConstructor
 public class FlowRecordService {
 
+    private static final int PROCESS_NODE_CACHE_SIZE = 1024;
+
     private final FlowTodoRecordRepository flowTodoRecordRepository;
     private final FlowTodoMergeRepository flowTodoMergeRepository;
     private final FlowRecordRepository flowRecordRepository;
+    private final Map<Long, FlowRecord> processNodeRecordCache = new LinkedHashMap<>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Long, FlowRecord> eldest) {
+            return size() > PROCESS_NODE_CACHE_SIZE;
+        }
+    };
+    private final Map<String, List<FlowRecord>> processNodeRecordsCache = new LinkedHashMap<>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, List<FlowRecord>> eldest) {
+            return size() > PROCESS_NODE_CACHE_SIZE;
+        }
+    };
 
 
     /**
@@ -29,6 +45,7 @@ public class FlowRecordService {
         FlowRecordSaveService flowRecordSaveService = new FlowRecordSaveService(flowRecords);
         flowRecordSaveService.registerRepositories(this.flowTodoRecordRepository,this.flowTodoMergeRepository,this.flowRecordRepository);
         flowRecordSaveService.saveAll();
+        this.evictProcessNodeRecords(flowRecords);
     }
 
     /**
@@ -39,6 +56,7 @@ public class FlowRecordService {
         FlowRecordSaveService flowRecordSaveService = new FlowRecordSaveService(flowRecord);
         flowRecordSaveService.registerRepositories(this.flowTodoRecordRepository,this.flowTodoMergeRepository,this.flowRecordRepository);
         flowRecordSaveService.saveAll();
+        this.evictProcessNodeRecord(flowRecord);
     }
 
 
@@ -61,6 +79,29 @@ public class FlowRecordService {
      */
     public FlowRecord getFlowRecord(long id){
         return flowRecordRepository.get(id);
+    }
+
+    /**
+     * 获取流程节点展示所需的轻量流程记录
+     *
+     * @param id 流程id
+     * @return 流程记录
+     */
+    public FlowRecord getProcessNodeRecord(long id) {
+        synchronized (processNodeRecordCache) {
+            FlowRecord flowRecord = processNodeRecordCache.get(id);
+            if (flowRecord != null) {
+                return flowRecord;
+            }
+        }
+
+        FlowRecord flowRecord = flowRecordRepository.getProcessNodeRecord(id);
+        if (flowRecord != null) {
+            synchronized (processNodeRecordCache) {
+                processNodeRecordCache.put(id, flowRecord);
+            }
+        }
+        return flowRecord;
     }
 
     /**
@@ -89,6 +130,48 @@ public class FlowRecordService {
      */
     public List<FlowRecord> findFlowRecordByProcessId(String processId) {
         return flowRecordRepository.findProcessRecords(processId);
+    }
+
+    /**
+     * 查询流程节点展示所需的轻量流程记录列表
+     *
+     * @param processId 流程唯一标识
+     * @return 流程记录
+     */
+    public List<FlowRecord> findProcessNodeRecords(String processId) {
+        synchronized (processNodeRecordsCache) {
+            List<FlowRecord> flowRecords = processNodeRecordsCache.get(processId);
+            if (flowRecords != null) {
+                return flowRecords;
+            }
+        }
+
+        List<FlowRecord> flowRecords = flowRecordRepository.findProcessNodeRecords(processId);
+        synchronized (processNodeRecordsCache) {
+            processNodeRecordsCache.put(processId, flowRecords);
+        }
+        return flowRecords;
+    }
+
+    private void evictProcessNodeRecords(List<FlowRecord> flowRecords) {
+        if (flowRecords == null || flowRecords.isEmpty()) {
+            return;
+        }
+        for (FlowRecord flowRecord : flowRecords) {
+            this.evictProcessNodeRecord(flowRecord);
+        }
+    }
+
+    private void evictProcessNodeRecord(FlowRecord flowRecord) {
+        if (flowRecord == null) {
+            return;
+        }
+        synchronized (processNodeRecordCache) {
+            processNodeRecordCache.remove(flowRecord.getId());
+        }
+        synchronized (processNodeRecordsCache) {
+            processNodeRecordsCache.remove(flowRecord.getProcessId());
+        }
     }
 
     /**

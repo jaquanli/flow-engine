@@ -6,8 +6,10 @@ import com.codingapi.flow.exception.FlowStateException;
 import com.codingapi.flow.gateway.FlowOperatorGateway;
 import com.codingapi.flow.operator.IFlowOperator;
 import com.codingapi.flow.record.FlowRecord;
-import com.codingapi.flow.repository.*;
-import java.util.Collections;
+import com.codingapi.flow.repository.DelayTaskRepository;
+import com.codingapi.flow.repository.FlowOperatorAssignmentRepository;
+import com.codingapi.flow.repository.ParallelBranchRepository;
+import com.codingapi.flow.repository.UrgeIntervalRepository;
 import com.codingapi.flow.service.FlowRecordService;
 import com.codingapi.flow.service.FlowService;
 import com.codingapi.flow.service.WorkflowService;
@@ -17,7 +19,10 @@ import com.codingapi.flow.session.FlowSession;
 import com.codingapi.flow.session.IRepositoryHolder;
 import lombok.Getter;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  *  流程引擎仓库持有者上下文,负责持有流程引擎相关的仓库实例,并提供相关服务的构建方法
@@ -44,6 +49,7 @@ public class RepositoryHolderContext implements IRepositoryHolder {
     private UrgeIntervalRepository urgeIntervalRepository;
     @Getter
     private FlowOperatorAssignmentRepository flowOperatorAssignmentRepository;
+    private final Map<String, Map<String, List<Long>>> operatorAssignmentCache = new ConcurrentHashMap<>();
 
     /**
      * 是否已经注册成功
@@ -188,10 +194,26 @@ public class RepositoryHolderContext implements IRepositoryHolder {
     @Override
     public void saveOperatorAssignment(String processId, String nodeId, List<Long> operatorIds) {
         flowOperatorAssignmentRepository.save(processId, nodeId, operatorIds);
+        operatorAssignmentCache.remove(processId);
     }
 
     @Override
     public List<Long> findAssignedOperatorIds(String processId, String nodeId) {
+        Map<String, List<Long>> assignments = this.findAssignedOperatorIds(processId);
+        if (assignments != null) {
+            return assignments.getOrDefault(nodeId, Collections.emptyList());
+        }
         return flowOperatorAssignmentRepository.findOperatorIds(processId, nodeId);
+    }
+
+    @Override
+    public Map<String, List<Long>> findAssignedOperatorIds(String processId) {
+        if (processId == null) {
+            return Collections.emptyMap();
+        }
+        return operatorAssignmentCache.computeIfAbsent(processId, key -> {
+            Map<String, List<Long>> assignments = flowOperatorAssignmentRepository.findOperatorIds(key);
+            return assignments == null ? Collections.emptyMap() : assignments;
+        });
     }
 }

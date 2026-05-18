@@ -22,7 +22,7 @@ import com.codingapi.flow.session.IRepositoryHolder;
 import com.codingapi.flow.strategy.node.OperatorLoadStrategy;
 import com.codingapi.flow.strategy.node.OperatorSelectType;
 import com.codingapi.flow.workflow.Workflow;
-import com.codingapi.flow.workflow.runtime.WorkflowRuntime;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 /**
  * 流程节点记录服务
  */
+@Slf4j
 public class FlowProcessNodeService {
 
     private final FlowProcessNodeRequest request;
@@ -47,6 +48,8 @@ public class FlowProcessNodeService {
     private final List<ProcessNode> nodeList;
     // 流程审批记录列表
     private final Map<Long, IFlowOperator> recordOperatorMap;
+    // 当前流程实例下的全部流程记录
+    private List<FlowRecord> processRecords;
 
 
     public FlowProcessNodeService(FlowProcessNodeRequest request, IRepositoryHolder repositoryHolder) {
@@ -66,12 +69,11 @@ public class FlowProcessNodeService {
         if (this.isCreateWorkflow()) {
             this.workflow = workflowService.getWorkflow(id);
         } else {
-            this.flowRecord = flowRecordService.getFlowRecord(Long.parseLong(id));
+            this.flowRecord = flowRecordService.getProcessNodeRecord(Long.parseLong(id));
             if (flowRecord == null) {
                 throw FlowNotFoundException.record(Long.parseLong(id));
             }
-            WorkflowRuntime workflowRuntime = workflowService.getWorkflowRuntime(flowRecord.getWorkRuntimeId());
-            this.workflow = workflowRuntime.toWorkflow();
+            this.workflow = workflowService.getRuntimeWorkflow(flowRecord.getWorkRuntimeId());
         }
     }
 
@@ -137,31 +139,45 @@ public class FlowProcessNodeService {
 
 
     public List<ProcessNode> processNodes() {
+        long start = System.currentTimeMillis();
         // load history data
         if (this.flowRecord != null) {
+            long historyStart = System.currentTimeMillis();
             this.loadHistoryData();
+            log.debug("flow process nodes load history data cost: {}ms", System.currentTimeMillis() - historyStart);
             if (this.flowRecord.isFinish()) {
                 // load end node
                 this.loadEndNode(this.flowRecord.isFinish());
+                log.debug("flow process nodes total cost: {}ms", System.currentTimeMillis() - start);
                 return nodeList;
             }
         }
         // load next node data
+        long nextStart = System.currentTimeMillis();
         this.loadNextData();
+        log.debug("flow process nodes load next data cost: {}ms", System.currentTimeMillis() - nextStart);
         // load end node
         this.loadEndNode(false);
+        log.debug("flow process nodes total cost: {}ms", System.currentTimeMillis() - start);
         return nodeList;
     }
 
 
     private void loadHistoryData() {
-        List<FlowRecord> allRecords = flowRecordService.findFlowRecordByProcessId(this.flowRecord.getProcessId());
+        long queryStart = System.currentTimeMillis();
+        List<FlowRecord> allRecords = flowRecordService.findProcessNodeRecords(this.flowRecord.getProcessId());
+        log.debug("flow process nodes query history records cost: {}ms, size: {}", System.currentTimeMillis() - queryStart, allRecords.size());
+        this.processRecords = allRecords;
         // 预加载操作人
+        long operatorStart = System.currentTimeMillis();
         List<Long> operatorIds = new ArrayList<>(this.collectRecordOperatorIds(allRecords));
         operatorIds.add(this.request.getOperatorId());
         this.preloadRecordOperators(operatorIds);
+        log.debug("flow process nodes preload record operators cost: {}ms", System.currentTimeMillis() - operatorStart);
+        long orderStart = System.currentTimeMillis();
         FlowRecordOrderService orderService = new FlowRecordOrderService(allRecords, this::loadRecordOperator, flowRecords -> nodeList.add(ProcessNode.createByRecord(flowRecords, workflow)));
         orderService.fetch(0);
+        log.debug("flow process nodes build history nodes cost: {}ms", System.currentTimeMillis() - orderStart);
     }
 
     private void loadEndNode(boolean finish) {
@@ -175,21 +191,36 @@ public class FlowProcessNodeService {
             IFlowNode currentNode = this.workflow.getStartNode();
             FlowSession flowSession = this.buildFlowSession(currentNode, currentOperator, currentOperator, currentOperator, 0);
             this.addFlowNode(currentNode, flowSession);
+            long fetchStart = System.currentTimeMillis();
             this.fetchFlowNode(flowSession);
+            log.debug("flow process nodes fetch start next nodes cost: {}ms", System.currentTimeMillis() - fetchStart);
         } else {
-            List<FlowRecord> todoRecords = this.flowRecordService.findFlowRecordTodoRecords(flowRecord.getProcessId());
+            List<FlowRecord> todoRecords = this.loadTodoRecords();
             if (todoRecords != null && !todoRecords.isEmpty()) {
+                long operatorStart = System.currentTimeMillis();
                 this.preloadRecordOperators(this.collectRecordOperatorIds(todoRecords));
+                log.debug("flow process nodes preload todo operators cost: {}ms", System.currentTimeMillis() - operatorStart);
                 for (FlowRecord todoRecord : todoRecords) {
                     IFlowNode currentNode = this.workflow.getFlowNode(todoRecord.getNodeId());
                     IFlowOperator createOperator = this.loadRecordOperator(todoRecord.getCreateOperatorId());
                     IFlowOperator submitOperator = this.loadRecordOperator(todoRecord.getSubmitOperatorId());
 
                     FlowSession flowSession = this.buildFlowSession(currentNode, currentOperator, createOperator, submitOperator, todoRecord.getWorkRuntimeId());
+                    long fetchStart = System.currentTimeMillis();
                     this.fetchFlowNode(flowSession);
+                    log.debug("flow process nodes fetch next nodes cost: {}ms, recordId: {}", System.currentTimeMillis() - fetchStart, todoRecord.getId());
                 }
             }
         }
+    }
+
+    private List<FlowRecord> loadTodoRecords() {
+        if (this.processRecords != null) {
+            return this.processRecords.stream()
+                    .filter(FlowRecord::isTodo)
+                    .toList();
+        }
+        return this.flowRecordService.findFlowRecordTodoRecords(flowRecord.getProcessId());
     }
 
 

@@ -5,6 +5,9 @@ import lombok.Data;
 
 @Entity
 @Table(name = "t_flow_operator_assignment",
+        indexes = {
+                @Index(name = "idx_flow_operator_assignment_process_id", columnList = "processId")
+        },
         uniqueConstraints = @UniqueConstraint(
                 name = "uk_process_node",
                 columnNames = {"processId", "nodeId"}

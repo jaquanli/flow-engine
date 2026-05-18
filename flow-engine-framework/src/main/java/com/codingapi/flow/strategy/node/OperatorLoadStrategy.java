@@ -50,8 +50,7 @@ public class OperatorLoadStrategy extends BaseStrategy {
                     : null;
             String nodeId = flowSession.getCurrentNode().getId();
             if (processId != null) {
-                List<Long> operatorIds = flowSession.getRepositoryHolder()
-                        .findAssignedOperatorIds(processId, nodeId);
+                List<Long> operatorIds = flowSession.findAssignedOperatorIds(processId, nodeId);
                 if (!operatorIds.isEmpty()) {
                     List<IFlowOperator> operators = flowSession.getRepositoryHolder()
                             .findOperatorByIds(operatorIds);

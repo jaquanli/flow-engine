@@ -12,6 +12,7 @@ import com.codingapi.flow.service.impl.FlowActionService;
 import com.codingapi.flow.service.impl.FlowDelayTriggerService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  *  资源持有对象
@@ -203,4 +204,14 @@ public interface IRepositoryHolder {
      * @return 操作人 ID 列表（未分配时返回空列表）
      */
     List<Long> findAssignedOperatorIds(String processId, String nodeId);
+
+    /**
+     * 查询流程实例下所有节点已分配的操作人 ID 列表
+     *
+     * @param processId 流程实例唯一标识
+     * @return nodeId -> 操作人 ID 列表；返回 null 表示当前实现不支持批量查询
+     */
+    default Map<String, List<Long>> findAssignedOperatorIds(String processId) {
+        return null;
+    }
 }

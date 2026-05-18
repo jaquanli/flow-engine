@@ -173,4 +173,16 @@ public class MockRepositoryHolder implements IRepositoryHolder {
     public List<Long> findAssignedOperatorIds(String processId, String nodeId) {
         return operatorAssignmentCache.getOrDefault(processId + ":" + nodeId, Collections.emptyList());
     }
+
+    @Override
+    public Map<String, List<Long>> findAssignedOperatorIds(String processId) {
+        Map<String, List<Long>> result = new HashMap<>();
+        String prefix = processId + ":";
+        for (Map.Entry<String, List<Long>> entry : operatorAssignmentCache.entrySet()) {
+            if (entry.getKey().startsWith(prefix)) {
+                result.put(entry.getKey().substring(prefix.length()), entry.getValue());
+            }
+        }
+        return result;
+    }
 }
