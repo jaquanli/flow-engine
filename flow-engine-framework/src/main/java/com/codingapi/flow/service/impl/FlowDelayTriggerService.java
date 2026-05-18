@@ -1,6 +1,7 @@
 package com.codingapi.flow.service.impl;
 
 import com.codingapi.flow.action.IFlowAction;
+import com.codingapi.flow.cache.FlowOperatorLocalThreadCache;
 import com.codingapi.flow.domain.DelayTask;
 import com.codingapi.flow.exception.FlowNotFoundException;
 import com.codingapi.flow.form.FormData;
@@ -42,6 +43,7 @@ public class FlowDelayTriggerService {
      * 延期任务触发执行
      */
     public void trigger() {
+        FlowOperatorLocalThreadCache.getInstance().clear();
         FlowRecord flowRecord = flowRecordService.getFlowRecord(delayTask.getCurrentRecordId());
         if (flowRecord == null) {
             throw FlowNotFoundException.record(delayTask.getCurrentRecordId());

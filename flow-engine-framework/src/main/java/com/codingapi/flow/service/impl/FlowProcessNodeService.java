@@ -37,8 +37,7 @@ public class FlowProcessNodeService {
     private final WorkflowService workflowService;
     private final IRepositoryHolder repositoryHolder;
 
-    // 当前操作人
-    private final IFlowOperator currentOperator;
+
     // 当前的流程记录，当id为workId时flowRecord为空
     private FlowRecord flowRecord;
     // 当前的流程设计器
@@ -48,6 +47,8 @@ public class FlowProcessNodeService {
     // 流程审批记录列表
     private final Map<Long, IFlowOperator> recordOperatorMap;
 
+    private final List<FlowRecord> recordList;
+
 
     public FlowProcessNodeService(FlowProcessNodeRequest request, IRepositoryHolder repositoryHolder) {
         this.request = request;
@@ -56,7 +57,7 @@ public class FlowProcessNodeService {
         this.repositoryHolder = repositoryHolder;
         this.nodeList = new ArrayList<>();
         this.recordOperatorMap = new HashMap<>();
-        this.currentOperator = this.loadRecordOperator(request.getOperatorId());
+        this.recordList = new ArrayList<>();
         this.initData();
     }
 
@@ -93,6 +94,28 @@ public class FlowProcessNodeService {
         return flowOperator;
     }
 
+    private void fetchFlowRecordOperatorList(){
+        List<Long> operatorIds = new ArrayList<>();
+
+        for(FlowRecord flowRecord:this.recordList){
+            if(!operatorIds.contains(flowRecord.getCreateOperatorId())){
+                operatorIds.add(flowRecord.getCreateOperatorId());
+            }
+            if(!operatorIds.contains(flowRecord.getCurrentOperatorId())){
+                operatorIds.add(flowRecord.getCurrentOperatorId());
+            }
+            if(!operatorIds.contains(flowRecord.getSubmitOperatorId())){
+                operatorIds.add(flowRecord.getSubmitOperatorId());
+            }
+        }
+
+        List<IFlowOperator> operatorList = this.repositoryHolder.findOperatorByIds(operatorIds);
+        if(operatorList!=null && !operatorList.isEmpty()){
+            for(IFlowOperator operator:operatorList){
+                this.recordOperatorMap.put(operator.getUserId(), operator);
+            }
+        }
+    }
 
     public List<ProcessNode> processNodes() {
         // load history data
@@ -114,6 +137,10 @@ public class FlowProcessNodeService {
 
     private void loadHistoryData() {
         List<FlowRecord> allRecords = flowRecordService.findFlowRecordByProcessId(this.flowRecord.getProcessId());
+        this.recordList.addAll(allRecords);
+
+        this.fetchFlowRecordOperatorList();
+
         FlowRecordOrderService orderService = new FlowRecordOrderService(allRecords, this::loadRecordOperator, flowRecords -> nodeList.add(ProcessNode.createByRecord(flowRecords, workflow)));
         orderService.fetch(0);
     }
@@ -124,16 +151,32 @@ public class FlowProcessNodeService {
     }
 
 
+
+
+
+    private List<FlowRecord> loadLatestRecords() {
+        List<FlowRecord> flowRecords = new ArrayList<>();
+        for (FlowRecord flowRecord : this.recordList) {
+            if (flowRecord.isTodo() && !flowRecord.isHidden()) {
+                flowRecords.add(flowRecord);
+            }
+        }
+        return flowRecords;
+    }
+
+
     private void loadNextData() {
         if (this.flowRecord == null) {
             IFlowNode currentNode = this.workflow.getStartNode();
+            IFlowOperator currentOperator = this.loadRecordOperator(this.request.getOperatorId());
             FlowSession flowSession = this.buildFlowSession(currentNode, currentOperator, currentOperator, currentOperator, 0);
             this.addFlowNode(currentNode, flowSession);
             this.fetchFlowNode(flowSession);
         } else {
-            List<FlowRecord> todoRecords = this.flowRecordService.findFlowRecordTodoRecords(flowRecord.getProcessId());
-            if (todoRecords != null && !todoRecords.isEmpty()) {
-                for (FlowRecord todoRecord : todoRecords) {
+            List<FlowRecord> todoLatestRecords = this.loadLatestRecords();
+            IFlowOperator currentOperator = this.loadRecordOperator(this.request.getOperatorId());
+            if (!todoLatestRecords.isEmpty()) {
+                for (FlowRecord todoRecord : todoLatestRecords) {
                     IFlowNode currentNode = this.workflow.getFlowNode(todoRecord.getNodeId());
                     IFlowOperator createOperator = this.loadRecordOperator(todoRecord.getCreateOperatorId());
                     IFlowOperator submitOperator = this.loadRecordOperator(todoRecord.getSubmitOperatorId());
@@ -193,7 +236,8 @@ public class FlowProcessNodeService {
 
                 if (flowNode instanceof StartNode) {
                     List<IFlowOperator> operators = new ArrayList<>();
-                    operators.add(this.currentOperator);
+                    IFlowOperator currentOperator = this.loadRecordOperator(this.request.getOperatorId());
+                    operators.add(currentOperator);
                     this.nodeList.add(ProcessNode.createByNode(flowNode, OperatorSelectType.SCRIPT, operators));
                 } else {
                     OperatorManager operatorManager = flowNode.strategyManager().loadOperators(flowSession);
@@ -202,7 +246,7 @@ public class FlowProcessNodeService {
                     OperatorSelectType operatorSelectType = null;
                     // 针对延迟节点、触发节点、子流程节点、路由节点、人工节点都没有设置流程审批人
                     OperatorLoadStrategy operatorLoadStrategy = flowNode.strategyManager().getStrategy(OperatorLoadStrategy.class);
-                    if(operatorLoadStrategy!=null) {
+                    if (operatorLoadStrategy != null) {
                         operatorSelectType = operatorLoadStrategy.getSelectType();
                     }
 

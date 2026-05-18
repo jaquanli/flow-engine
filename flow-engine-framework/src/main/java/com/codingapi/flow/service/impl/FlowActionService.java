@@ -1,6 +1,7 @@
 package com.codingapi.flow.service.impl;
 
 import com.codingapi.flow.action.IFlowAction;
+import com.codingapi.flow.cache.FlowOperatorLocalThreadCache;
 import com.codingapi.flow.context.ActionResponseContext;
 import com.codingapi.flow.exception.FlowNotFoundException;
 import com.codingapi.flow.exception.FlowStateException;
@@ -42,8 +43,11 @@ public class FlowActionService {
 
     public ActionResponse action() {
 
+        FlowOperatorLocalThreadCache.getInstance().clear();
         ActionResponseContext.getInstance().clear();
         request.verify();
+
+
         // 验证当前用户
         IFlowOperator currentOperator = flowOperatorGateway.get(request.getAdvice().getOperatorId());
         if (currentOperator == null) {
