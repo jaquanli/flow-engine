@@ -295,13 +295,39 @@ public class FlowProcessNodeService {
         public void fetch(long formId) {
             List<FlowRecord> batchList = this.getNextRecords(formId);
             if (!batchList.isEmpty()) {
-                this.consumer.accept(batchList.stream().map(record -> new ProcessNode.FlowRecordOperator(record, flowOperatorGateway.getFlowOperator(record.getCurrentOperatorId()))).toList());
+                // 根据nodeId 进行分组，不同的分组的要分开执行
 
-                for (FlowRecord item : batchList) {
-                    this.fetch(item.getId());
+                Map<String,List<FlowRecord>> groupList = this.loadGroupList(batchList);
+                for(List<FlowRecord> group:groupList.values()) {
+
+                    this.consumer.accept(group.stream().map(record -> new ProcessNode.FlowRecordOperator(record, flowOperatorGateway.getFlowOperator(record.getCurrentOperatorId()))).toList());
+
+                    for (FlowRecord item : group) {
+                        this.fetch(item.getId());
+                    }
                 }
             }
         }
+
+
+        private Map<String, List<FlowRecord>> loadGroupList(List<FlowRecord> recordList) {
+            Map<String, List<FlowRecord>> groupList = new HashMap<>();
+
+            for (FlowRecord flowRecord : recordList) {
+                String nodeId = flowRecord.getNodeId();
+
+                List<FlowRecord> list = groupList.get(nodeId);
+                if (list == null) {
+                    list = new ArrayList<>();
+                }
+                list.add(flowRecord);
+
+                groupList.put(nodeId, list);
+            }
+
+            return groupList;
+        }
+
 
     }
 
