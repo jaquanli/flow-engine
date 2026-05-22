@@ -21,7 +21,7 @@ import java.util.Map;
 public class InclusiveElseBranchNode extends BaseFlowNode {
 
     public static final String NODE_TYPE = NodeType.INCLUSIVE_ELSE_BRANCH.name();
-    public static final String DEFAULT_NAME = "包容else分支节点";
+    public static final String DEFAULT_NAME = "其他情况";
 
 
     @Override

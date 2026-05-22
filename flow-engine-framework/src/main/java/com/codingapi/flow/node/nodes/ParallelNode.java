@@ -17,7 +17,7 @@ import java.util.Map;
 public class ParallelNode extends BaseFlowNode implements IBlockNode {
 
     public static final String NODE_TYPE = NodeType.PARALLEL.name();
-    public static final String DEFAULT_NAME = "并行控制节点";
+    public static final String DEFAULT_NAME = "并行节点";
 
     @Override
     public String getType() {

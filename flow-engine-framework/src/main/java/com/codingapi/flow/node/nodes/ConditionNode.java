@@ -17,7 +17,7 @@ import java.util.Map;
 public class ConditionNode extends BaseFlowNode implements IBlockNode {
 
     public static final String NODE_TYPE = NodeType.CONDITION.name();
-    public static final String DEFAULT_NAME = "条件控制节点";
+    public static final String DEFAULT_NAME = "条件节点";
 
     @Override
     public String getType() {

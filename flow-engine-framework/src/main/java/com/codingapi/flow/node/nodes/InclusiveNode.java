@@ -17,7 +17,7 @@ import java.util.Map;
 public class InclusiveNode extends BaseFlowNode implements IBlockNode {
 
     public static final String NODE_TYPE = NodeType.INCLUSIVE.name();
-    public static final String DEFAULT_NAME = "包容控制节点";
+    public static final String DEFAULT_NAME = "包容节点";
 
 
     @Override
