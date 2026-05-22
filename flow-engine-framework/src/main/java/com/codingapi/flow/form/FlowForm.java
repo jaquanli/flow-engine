@@ -132,6 +132,10 @@ public class FlowForm {
         if (this.code.equals(formCode)) {
             return this.getField(fieldCode);
         } else {
+            //空指针判定
+            if (this.subForms == null || this.subForms.isEmpty()) {
+                return null;
+            }
             for (FlowForm subForm : subForms) {
                 if (subForm.getCode().equals(formCode)) {
                     return subForm.getField(fieldCode);
