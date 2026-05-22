@@ -1,6 +1,7 @@
 package com.codingapi.flow.pojo.response;
 
 import com.codingapi.flow.node.IFlowNode;
+import com.codingapi.flow.node.nodes.StartNode;
 import com.codingapi.flow.operator.IFlowOperator;
 import com.codingapi.flow.record.FlowRecord;
 import com.codingapi.flow.strategy.node.MultiOperatorAuditStrategy;
@@ -185,7 +186,7 @@ public class ProcessNode {
         processNode.setNodeId(flowNode.getId());
         processNode.setNodeName(flowNode.getName());
         processNode.setNodeType(flowNode.getType());
-        processNode.setApproveState(ApproveState.PENDING);
+        processNode.setApproveState(flowNode instanceof StartNode?ApproveState.PROCESSING:ApproveState.PENDING);
         processNode.resetApproveStrategy(flowNode);
 
         OperatorStrategy operatorStrategy = OperatorStrategy.NO_OPERATOR;

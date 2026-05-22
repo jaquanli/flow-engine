@@ -18,7 +18,7 @@ import java.util.Map;
 public class ConditionElseBranchNode extends BaseFlowNode {
 
     public static final String NODE_TYPE = NodeType.CONDITION_ELSE_BRANCH.name();
-    public static final String DEFAULT_NAME = "条件else分支节点";
+    public static final String DEFAULT_NAME = "其他情况";
 
 
     @Override

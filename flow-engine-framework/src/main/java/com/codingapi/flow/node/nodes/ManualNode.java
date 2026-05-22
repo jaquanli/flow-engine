@@ -15,7 +15,7 @@ import java.util.Map;
 public class ManualNode extends BaseFlowNode implements IBlockNode , IDisplayNode {
 
     public static final String NODE_TYPE = NodeType.MANUAL.name();
-    public static final String DEFAULT_NAME = "人工控制节点";
+    public static final String DEFAULT_NAME = "人工节点";
 
 
     @Override
