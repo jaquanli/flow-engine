@@ -23,7 +23,11 @@ class ScriptRuntimeContextTest {
     @Test
     void execute1() {
         String script = "def run(abc){return 1}";
-        ScriptRuntimeRequest runtimeRequest = new ScriptRuntimeRequest(script,Integer.class, GroovyBindObjectBuilder.builder()
+        ScriptRuntimeRequest runtimeRequest = new ScriptRuntimeRequest(
+                script,
+                null,
+                Integer.class,
+                GroovyBindObjectBuilder.builder()
                 .add("abc",1)
                 .build());
 
@@ -42,7 +46,7 @@ class ScriptRuntimeContextTest {
         gateway.save(user);
         String script = "def run(abc){return $bind.getOperatorById(1)}";
 
-        ScriptRuntimeRequest runtimeRequest = new ScriptRuntimeRequest(script,IFlowOperator.class, GroovyBindObjectBuilder.builder()
+        ScriptRuntimeRequest runtimeRequest = new ScriptRuntimeRequest(script,null,IFlowOperator.class, GroovyBindObjectBuilder.builder()
                 .add("abc",1)
                 .build());
 
@@ -61,7 +65,7 @@ class ScriptRuntimeContextTest {
             String script = "def run(abc){return " + i + "}";
             scripts.add(script);
 
-            ScriptRuntimeRequest runtimeRequest = new ScriptRuntimeRequest(script,Integer.class, GroovyBindObjectBuilder.builder()
+            ScriptRuntimeRequest runtimeRequest = new ScriptRuntimeRequest(script,null,Integer.class, GroovyBindObjectBuilder.builder()
                     .add("abc",i)
                     .build());
 
@@ -78,7 +82,7 @@ class ScriptRuntimeContextTest {
         for (int i = 0; i < 5; i++) {
             String script = "def run(abc){return " + i + "}";
 
-            ScriptRuntimeRequest runtimeRequest = new ScriptRuntimeRequest(script,Integer.class, GroovyBindObjectBuilder.builder()
+            ScriptRuntimeRequest runtimeRequest = new ScriptRuntimeRequest(script,null,Integer.class, GroovyBindObjectBuilder.builder()
                     .add("abc",i)
                     .build());
 
