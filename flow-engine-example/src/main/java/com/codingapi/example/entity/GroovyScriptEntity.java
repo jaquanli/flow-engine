@@ -59,6 +59,11 @@ public class GroovyScriptEntity {
     private String remark;
 
     /**
+     * 绑定数据
+     */
+    private String tag;
+
+    /**
      * 创建时间
      */
     private Long createTime;
