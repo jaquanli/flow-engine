@@ -4,21 +4,19 @@ import com.codingapi.flow.action.IFlowAction;
 import com.codingapi.flow.action.actions.PassAction;
 import com.codingapi.flow.builder.BaseNodeBuilder;
 import com.codingapi.flow.event.FlowRecordFinishEvent;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.node.BaseFlowNode;
 import com.codingapi.flow.node.IDisplayNode;
 import com.codingapi.flow.node.NodeType;
 import com.codingapi.flow.record.FlowRecord;
 import com.codingapi.flow.session.FlowSession;
 import com.codingapi.flow.session.IRepositoryHolder;
-import com.codingapi.flow.utils.RandomUtils;
 import com.codingapi.springboot.framework.event.EventPusher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * 结束节点
@@ -27,8 +25,6 @@ public class EndNode extends BaseFlowNode implements IDisplayNode {
 
     public static final String NODE_TYPE = NodeType.END.name();
     public static final String DEFAULT_NAME = "结束节点";
-
-    private final ScheduledExecutorService threadPools = Executors.newScheduledThreadPool(1);
 
     @Override
     public String getType() {
@@ -88,7 +84,7 @@ public class EndNode extends BaseFlowNode implements IDisplayNode {
     }
 
     public EndNode() {
-        this(RandomUtils.generateStringId(), DEFAULT_NAME);
+        this(FlowIDGeneratorGatewayContext.getInstance().generateNodeId(), DEFAULT_NAME);
     }
 
     public static EndNode formMap(Map<String, Object> map) {

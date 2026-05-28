@@ -2,6 +2,7 @@ package com.codingapi.flow.node.nodes;
 
 import com.codingapi.flow.builder.BaseNodeBuilder;
 import com.codingapi.flow.exception.FlowNotFoundException;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.node.BaseFlowNode;
 import com.codingapi.flow.node.IFlowNode;
 import com.codingapi.flow.node.NodeType;
@@ -9,12 +10,10 @@ import com.codingapi.flow.node.helper.ParallelNodeRelationHelper;
 import com.codingapi.flow.record.FlowRecord;
 import com.codingapi.flow.script.node.ConditionScript;
 import com.codingapi.flow.session.FlowSession;
-import com.codingapi.flow.utils.RandomUtils;
 import com.codingapi.flow.workflow.Workflow;
 import lombok.Setter;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -44,7 +43,7 @@ public class InclusiveBranchNode extends BaseFlowNode {
     }
 
     public InclusiveBranchNode() {
-        this(RandomUtils.generateStringId(), DEFAULT_NAME, 0);
+        this(FlowIDGeneratorGatewayContext.getInstance().generateNodeId(), DEFAULT_NAME, 0);
     }
 
     /**
@@ -111,7 +110,7 @@ public class InclusiveBranchNode extends BaseFlowNode {
 
         // 在流程记录中记录，合并的条件信息。
         FlowRecord flowRecord = flowSession.getCurrentRecord();
-        flowRecord.parallelBranchNode(overNode.getId(), nodes.size(), RandomUtils.generateStringId());
+        flowRecord.parallelBranchNode(overNode.getId(), nodes.size(), FlowIDGeneratorGatewayContext.getInstance().generateParallelId());
 
         return nodes;
     }

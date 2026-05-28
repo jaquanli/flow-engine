@@ -7,12 +7,12 @@ import com.codingapi.flow.action.IFlowAction;
 import com.codingapi.flow.event.FlowRecordTodoEvent;
 import com.codingapi.flow.event.IFlowEvent;
 import com.codingapi.flow.exception.FlowStateException;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.node.IFlowNode;
 import com.codingapi.flow.record.FlowRecord;
 import com.codingapi.flow.script.action.ActionRejectScript;
 import com.codingapi.flow.session.FlowSession;
 import com.codingapi.flow.session.IRepositoryHolder;
-import com.codingapi.flow.utils.RandomUtils;
 import com.codingapi.springboot.framework.event.EventPusher;
 import lombok.Getter;
 
@@ -30,7 +30,7 @@ public class RejectAction extends BaseAction {
     private ActionRejectScript script;
 
     public RejectAction() {
-        this.id = RandomUtils.generateStringId();
+        this.id = FlowIDGeneratorGatewayContext.getInstance().generateActionId();
         this.title = "拒绝";
         this.enable = true;
         this.type = ActionType.REJECT.name();

@@ -1,6 +1,7 @@
 package com.codingapi.flow.node.nodes;
 
 import com.codingapi.flow.builder.BaseNodeBuilder;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.manager.NodeStrategyManager;
 import com.codingapi.flow.node.BaseFlowNode;
 import com.codingapi.flow.node.IDisplayNode;
@@ -8,7 +9,6 @@ import com.codingapi.flow.node.NodeType;
 import com.codingapi.flow.session.FlowSession;
 import com.codingapi.flow.strategy.node.INodeStrategy;
 import com.codingapi.flow.strategy.node.TriggerStrategy;
-import com.codingapi.flow.utils.RandomUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ public class TriggerNode extends BaseFlowNode implements IDisplayNode {
     }
 
     public TriggerNode() {
-        this(RandomUtils.generateStringId(), DEFAULT_NAME);
+        this(FlowIDGeneratorGatewayContext.getInstance().generateNodeId(), DEFAULT_NAME);
     }
 
     private static List<INodeStrategy> defaultStrategies() {

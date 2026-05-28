@@ -1,12 +1,12 @@
 package com.codingapi.flow.node.nodes;
 
 import com.codingapi.flow.builder.BaseNodeBuilder;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.node.BaseFlowNode;
 import com.codingapi.flow.node.IFlowNode;
 import com.codingapi.flow.node.NodeType;
 import com.codingapi.flow.script.node.ConditionScript;
 import com.codingapi.flow.session.FlowSession;
-import com.codingapi.flow.utils.RandomUtils;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public class ConditionBranchNode extends BaseFlowNode {
     }
 
     public ConditionBranchNode() {
-        this(RandomUtils.generateStringId(), DEFAULT_NAME, 0);
+        this(FlowIDGeneratorGatewayContext.getInstance().generateNodeId(), DEFAULT_NAME, 0);
     }
 
     /**

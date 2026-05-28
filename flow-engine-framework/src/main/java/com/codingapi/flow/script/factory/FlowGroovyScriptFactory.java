@@ -1,10 +1,10 @@
 package com.codingapi.flow.script.factory;
 
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.pojo.request.FlowCreateRequest;
 import com.codingapi.flow.script.request.GroovyScriptBind;
 import com.codingapi.flow.script.request.GroovyScriptRequest;
 import com.codingapi.flow.script.request.GroovyWorkflowRequest;
-import com.codingapi.flow.utils.RandomUtils;
 import com.codingapi.springboot.script.GroovyScript;
 
 import java.util.List;
@@ -15,7 +15,7 @@ public class FlowGroovyScriptFactory {
     public static final String DEFAULT_SCRIPT_REMARK = "flow";
 
     public static GroovyScript createRouterScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 路由触发脚本\\n
                 传入对象为GroovyScriptRequest对象，返回数据格式为String类型\\n
@@ -35,7 +35,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createNodeTitleScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 节点待办标题脚本\\n
                 传入对象为GroovyScriptRequest对象，返回数据格式为String类型，即为展示的待办标题数据。\\n
@@ -55,7 +55,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createConditionScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 条件匹配脚本\\n
                 传入对象为GroovyScriptRequest对象，返回数据格式为Boolean类型，返回true则为满足条件，执行后续的操作，返回false则不执行后续条件。\\n
@@ -75,7 +75,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createTriggerScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 触发节点脚本\\n
                 脚本说明：即用户自定义处理逻辑。\\n
@@ -95,7 +95,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createSubProcessScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 子流程任务脚本\\n
                 传入对象为GroovyScriptRequest对象，返回数据格式为FlowCreateRequest类型\\n
@@ -116,7 +116,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createOperatorLoadScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 匹配人员列表脚本\\n
                 传入对象为GroovyScriptRequest对象，返回数据格式为List<Long>类型，即long[]数组格式，每一个long的id数据为一个人员的id，实例格式为[1,2,3]\\n
@@ -137,7 +137,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createOperatorMatchScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 人员匹配脚本\\n
                 传入对象为GroovyWorkflowRequest类型的request对象，返回数据为Boolean类型，返回true时表明该人拥有发起流程的权限，否则反之。
@@ -157,7 +157,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createErrorTriggerScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 异常触发脚本\\n
                 脚本说明：所谓的异常脚本，是指流程在执行时没有匹配到审批人员时触发的情况。\\n
@@ -182,7 +182,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createActionCustomScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
                 自定义脚本\\n
                 脚本说明：即当点击自定义按钮时的操作逻辑，在完成自定义的业务之后，需要再联动一个动作。\\n
@@ -204,7 +204,7 @@ public class FlowGroovyScriptFactory {
     }
 
     public static GroovyScript createActionRejectScript(String script) {
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         String description = """
             拒绝操作脚本\\n
             脚本说明：即当用户点击拒绝时会发生的处理逻辑。\\n

@@ -1,17 +1,11 @@
 package com.codingapi.flow.node.nodes;
 
 import com.codingapi.flow.builder.BaseNodeBuilder;
-import com.codingapi.flow.exception.FlowNotFoundException;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.node.BaseFlowNode;
-import com.codingapi.flow.node.IFlowNode;
 import com.codingapi.flow.node.NodeType;
-import com.codingapi.flow.node.helper.ParallelNodeRelationHelper;
-import com.codingapi.flow.record.FlowRecord;
 import com.codingapi.flow.session.FlowSession;
-import com.codingapi.flow.utils.RandomUtils;
-import com.codingapi.flow.workflow.Workflow;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,7 +27,7 @@ public class ManualBranchNode extends BaseFlowNode {
     }
 
     public ManualBranchNode() {
-        this(RandomUtils.generateStringId(), DEFAULT_NAME, 0);
+        this(FlowIDGeneratorGatewayContext.getInstance().generateNodeId(), DEFAULT_NAME, 0);
     }
 
     /**

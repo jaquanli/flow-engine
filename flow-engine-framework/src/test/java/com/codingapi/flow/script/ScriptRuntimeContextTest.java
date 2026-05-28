@@ -2,9 +2,9 @@ package com.codingapi.flow.script;
 
 import com.codingapi.flow.context.GatewayContext;
 import com.codingapi.flow.gateway.impl.UserGateway;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.operator.IFlowOperator;
 import com.codingapi.flow.user.User;
-import com.codingapi.flow.utils.RandomUtils;
 import com.codingapi.springboot.script.GroovyScript;
 import com.codingapi.springboot.script.meta.GroovyMetadata;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ class ScriptRuntimeContextTest {
     @Test
     void execute1() {
         String script = "def run(abc){return 1}";
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         GroovyScript groovyScript = GroovyScript.createInvoke(key,script,"run", Integer.class, Map.of("abc", Integer.class));
 
         GroovyMetadata metadata = groovyScript.toMetadata();
@@ -41,7 +41,7 @@ class ScriptRuntimeContextTest {
         gateway.save(user);
         String script = "def run(abc){return $bind.getOperatorById(1)}";
 
-        String key = RandomUtils.generateStringId();
+        String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
         GroovyScript groovyScript = GroovyScript.createInvoke(key,script,"run", IFlowOperator.class, Map.of("abc", Integer.class));
 
         IFlowOperator target = groovyScript.invoke(1);
@@ -58,7 +58,7 @@ class ScriptRuntimeContextTest {
             String script = "def run(abc){return " + i + "}";
             scripts.add(script);
 
-            String key = RandomUtils.generateStringId();
+            String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
             GroovyScript groovyScript = GroovyScript.createInvoke(key,script,"run", Integer.class, Map.of("abc", Integer.class));
 
             groovyScript.invoke(i);
@@ -74,7 +74,7 @@ class ScriptRuntimeContextTest {
         for (int i = 0; i < 5; i++) {
             String script = "def run(abc){return " + i + "}";
 
-            String key = RandomUtils.generateStringId();
+            String key = FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey();
             GroovyScript groovyScript = GroovyScript.createInvoke(key,script,"run", Integer.class, Map.of("abc", Integer.class));
             groovyScript.invoke(i);
         }

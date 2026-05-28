@@ -11,7 +11,6 @@ import com.codingapi.flow.record.FlowRecord;
 import com.codingapi.flow.session.FlowSession;
 import com.codingapi.flow.strategy.node.INodeStrategy;
 import com.codingapi.flow.strategy.node.MultiOperatorAuditStrategy;
-import com.codingapi.flow.utils.RandomUtils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -20,6 +19,7 @@ import org.springframework.util.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 public abstract class BaseAuditNode extends BaseFlowNode implements IFlowNode {
 
@@ -149,7 +149,8 @@ public abstract class BaseAuditNode extends BaseFlowNode implements IFlowNode {
             }
             // 如果是随机审批，则隐藏掉后续的人员的审批记录
             if (multiOperatorAuditStrategyType == MultiOperatorAuditStrategy.Type.RANDOM_ONE) {
-                int index = RandomUtils.randomInt(operators.size());
+                Random random = new Random();
+                int index = random.nextInt(operators.size());
 
                 List<FlowRecord> newRecords = new ArrayList<>();
                 for (FlowRecord record : records) {

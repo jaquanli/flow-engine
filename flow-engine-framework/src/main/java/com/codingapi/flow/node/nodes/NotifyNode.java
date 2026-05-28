@@ -2,6 +2,7 @@ package com.codingapi.flow.node.nodes;
 
 import com.codingapi.flow.action.IFlowAction;
 import com.codingapi.flow.builder.BaseNodeBuilder;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.manager.NodeStrategyManager;
 import com.codingapi.flow.manager.OperatorManager;
 import com.codingapi.flow.node.BaseAuditNode;
@@ -12,7 +13,6 @@ import com.codingapi.flow.record.FlowRecord;
 import com.codingapi.flow.session.FlowSession;
 import com.codingapi.flow.session.IRepositoryHolder;
 import com.codingapi.flow.strategy.node.*;
-import com.codingapi.flow.utils.RandomUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ public class NotifyNode extends BaseAuditNode implements IDisplayNode {
     }
 
     public NotifyNode() {
-        this(RandomUtils.generateStringId(), DEFAULT_NAME, DEFAULT_VIEW, defaultActions(), defaultStrategies());
+        this(FlowIDGeneratorGatewayContext.getInstance().generateNodeId(), DEFAULT_NAME, DEFAULT_VIEW, defaultActions(), defaultStrategies());
     }
 
     @Override
