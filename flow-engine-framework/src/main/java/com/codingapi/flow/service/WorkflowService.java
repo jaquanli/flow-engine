@@ -2,6 +2,7 @@ package com.codingapi.flow.service;
 
 import com.codingapi.flow.cache.WorkflowRuntimeCache;
 import com.codingapi.flow.exception.FlowExecutionException;
+import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
 import com.codingapi.flow.operator.IFlowOperator;
 import com.codingapi.flow.repository.WorkflowRepository;
 import com.codingapi.flow.repository.WorkflowRuntimeRepository;
@@ -11,8 +12,10 @@ import com.codingapi.flow.workflow.Workflow;
 import com.codingapi.flow.workflow.WorkflowVersion;
 import com.codingapi.flow.workflow.runtime.WorkflowRuntime;
 import com.codingapi.springboot.script.GroovyScript;
+import com.codingapi.springboot.script.cache.GroovyScriptCacheContext;
 import com.codingapi.springboot.script.cache.TempGroovyScriptContext;
-import com.codingapi.springboot.script.parser.GroovyScriptParserService;
+import com.codingapi.springboot.script.parser.GroovyScriptAnnotationUtils;
+import com.codingapi.springboot.script.parser.pojo.GroovyScriptFieldResult;
 import com.codingapi.springboot.script.repository.GroovyScriptRepositoryContext;
 import lombok.AllArgsConstructor;
 
@@ -40,19 +43,23 @@ public class WorkflowService {
         List<WorkflowVersion> updateList = new ArrayList<>();
 
         currentVersion.enableVersion();
+        if (currentVersion.getId() == 0) {
+            // 新创建的版本，替换脚本
+            WorkflowGroovyScriptUtils.resetGroovyScripts(currentVersion);
+        }
         updateList.add(currentVersion);
 
-        List<WorkflowVersion> versionList = workflowVersionRepository.findVersion(currentVersion.getWorkId());
-        if (versionList != null) {
+        List<WorkflowVersion> historyVersions = workflowVersionRepository.findVersion(currentVersion.getWorkId());
+        if (historyVersions != null) {
 
             if (!creatable) {
-                versionList.stream().filter(WorkflowVersion::isCurrent).findFirst().ifPresent(current -> {
+                historyVersions.stream().filter(WorkflowVersion::isCurrent).findFirst().ifPresent(current -> {
                     currentVersion.setId(current.getId());
                     currentVersion.setVersionName(current.getVersionName());
                 });
             }
 
-            for (WorkflowVersion version : versionList) {
+            for (WorkflowVersion version : historyVersions) {
                 if (version.getId() != currentVersion.getId()) {
                     version.disableVersion();
                     updateList.add(version);
@@ -73,14 +80,11 @@ public class WorkflowService {
         }
         workflowRepository.save(workflow);
 
-        List<String> keys = new GroovyScriptParserService(workflow).parser();
-        for (String key : keys) {
-            GroovyScript groovyScript = TempGroovyScriptContext.getInstance().getGroovyScript(key);
-            if (groovyScript != null) {
-                groovyScript.save();
-            }
-        }
+        WorkflowGroovyScriptUtils.saveGroovyScripts(workflow);
+
     }
+
+
 
 
     /**
@@ -113,12 +117,7 @@ public class WorkflowService {
         if (version != null && version.isCurrent()) {
             throw FlowExecutionException.removeWorkflowError();
         }
-        if (version != null) {
-            List<String> keys = new GroovyScriptParserService(version).parser();
-            for (String key : keys) {
-                GroovyScriptRepositoryContext.getInstance().delete(key);
-            }
-        }
+        WorkflowGroovyScriptUtils.deleteGroovyScripts(version);
         workflowVersionRepository.delete(versionId);
     }
 
@@ -168,12 +167,7 @@ public class WorkflowService {
      */
     public void delete(String workId) {
         Workflow workflow = workflowRepository.get(workId);
-        if (workflow != null) {
-            List<String> keys = new GroovyScriptParserService(workflow).parser();
-            for (String key : keys) {
-                GroovyScriptRepositoryContext.getInstance().delete(key);
-            }
-        }
+        WorkflowGroovyScriptUtils.deleteGroovyScripts(workflow);
         workflowVersionRepository.delete(workId);
         workflowRepository.delete(workId);
     }
@@ -229,7 +223,65 @@ public class WorkflowService {
         String json = Base64Utils.toJson(body);
         Workflow workflow = Workflow.formJson(json);
         workflow.resetWorkflow(createOperator);
+        // 替换脚本
+        WorkflowGroovyScriptUtils.resetGroovyScripts(workflow);
         this.saveWorkflow(workflow, false);
         return workflow.getId();
     }
+
+
+    private static class WorkflowGroovyScriptUtils{
+        /**
+         * 同步保存脚本对象
+         *
+         * @param target 目标对象
+         */
+        public static void saveGroovyScripts(Object target) {
+            if (target != null) {
+                List<String> keys = GroovyScriptAnnotationUtils.findGroovyScriptFields(target).getKeys();
+                for (String key : keys) {
+                    GroovyScript groovyScript = TempGroovyScriptContext.getInstance().getGroovyScript(key);
+                    if (groovyScript != null) {
+                        groovyScript.save();
+                    }
+                }
+            }
+        }
+
+        /**
+         * 同步删除脚本数据
+         *
+         * @param target 目标对象
+         */
+        public static void deleteGroovyScripts(Object target) {
+            if (target != null) {
+                List<String> keys = GroovyScriptAnnotationUtils.findGroovyScriptFields(target).getKeys();
+                for (String key : keys) {
+                    GroovyScriptRepositoryContext.getInstance().delete(key);
+                }
+            }
+        }
+
+        /**
+         * 替换脚本数据对象
+         *
+         * @param target 目标对象
+         */
+        public static void resetGroovyScripts(Object target) {
+            if (target != null) {
+                GroovyScriptFieldResult result = GroovyScriptAnnotationUtils.findGroovyScriptFields(target);
+                result.update((key) -> {
+                    GroovyScript groovyScript = GroovyScriptCacheContext.getInstance().getGroovyScript(key);
+                    if (groovyScript != null) {
+                        GroovyScript latestScript = groovyScript.copy(FlowIDGeneratorGatewayContext.getInstance().generateFlowScriptKey());
+                        latestScript.save();
+                        return latestScript.getKey();
+                    }
+                    return key;
+                });
+            }
+        }
+    }
+
+
 }

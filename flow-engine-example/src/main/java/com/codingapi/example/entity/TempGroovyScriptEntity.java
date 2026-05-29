@@ -19,10 +19,12 @@ public class TempGroovyScriptEntity {
     /**
      * 脚本内容
      */
+    @Lob
     private String script;
     /**
      * 脚本描述信息
      */
+    @Lob
     private String description;
     /**
      * 脚本函数名称

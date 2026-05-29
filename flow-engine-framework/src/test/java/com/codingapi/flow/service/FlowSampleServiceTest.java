@@ -24,6 +24,7 @@ import com.codingapi.flow.strategy.node.*;
 import com.codingapi.flow.user.User;
 import com.codingapi.flow.workflow.Workflow;
 import com.codingapi.flow.workflow.WorkflowBuilder;
+import com.codingapi.springboot.script.parser.GroovyScriptAnnotationUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -89,6 +90,10 @@ class FlowSampleServiceTest {
                 .addNode(bossNode)
                 .addNode(endNode)
                 .build();
+
+        List<String> keys = GroovyScriptAnnotationUtils.findGroovyScriptFields(workflow).getKeys();
+        System.out.println(keys);
+        assertEquals(6,keys.size());
 
         factory.workflowService.saveWorkflow(workflow);
 
@@ -933,9 +938,9 @@ class FlowSampleServiceTest {
         assertEquals(1, userRecordList.size());
 
 
-        List<ProcessNode> nodeList = factory.flowService.processNodes(new FlowProcessNodeRequest(workflow.getId(), user.getUserId(),data));
-        assertEquals(5,nodeList.size());
-        assertEquals(0,nodeList.stream().filter(ProcessNode::isHistory).toList().size());
+        List<ProcessNode> nodeList = factory.flowService.processNodes(new FlowProcessNodeRequest(workflow.getId(), user.getUserId(), data));
+        assertEquals(5, nodeList.size());
+        assertEquals(0, nodeList.stream().filter(ProcessNode::isHistory).toList().size());
 
         FlowActionRequest userRequest = new FlowActionRequest();
         userRequest.setFormData(data);
