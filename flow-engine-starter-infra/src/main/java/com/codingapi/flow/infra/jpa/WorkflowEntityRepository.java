@@ -11,6 +11,8 @@ public interface WorkflowEntityRepository extends FastRepository<WorkflowEntity,
 
     WorkflowEntity getWorkflowEntityById(String id);
 
-    @Query("select new com.codingapi.flow.infra.pojo.WorkflowOption(w.title,w.id) from WorkflowEntity w where w.enable = true")
+    WorkflowEntity getWorkflowEntityByCode(String code);
+
+    @Query("select new com.codingapi.flow.infra.pojo.WorkflowOption(w.title,w.code) from WorkflowEntity w where w.enable = true")
     List<WorkflowOption> options();
 }
