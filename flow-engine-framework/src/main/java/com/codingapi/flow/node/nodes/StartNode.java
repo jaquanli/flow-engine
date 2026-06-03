@@ -6,6 +6,7 @@ import com.codingapi.flow.action.actions.SaveAction;
 import com.codingapi.flow.builder.BaseNodeBuilder;
 import com.codingapi.flow.context.GatewayContext;
 import com.codingapi.flow.generator.FlowIDGeneratorGatewayContext;
+import com.codingapi.flow.javscript.annotation.NodeViewScript;
 import com.codingapi.flow.manager.NodeStrategyManager;
 import com.codingapi.flow.node.BaseFlowNode;
 import com.codingapi.flow.node.IDisplayNode;
@@ -41,6 +42,14 @@ public class StartNode extends BaseFlowNode implements IDisplayNode {
     @Setter
     private String view;
 
+    /**
+     * 视图代码
+     */
+    @Getter
+    @Setter
+    @NodeViewScript
+    private String code;
+
 
     @Override
     public String getType() {
@@ -53,6 +62,7 @@ public class StartNode extends BaseFlowNode implements IDisplayNode {
         startNode.setId(FlowIDGeneratorGatewayContext.getInstance().generateNodeId());
         startNode.setName(DEFAULT_NAME);
         startNode.setView(DEFAULT_VIEW);
+        startNode.setCode(FlowIDGeneratorGatewayContext.getInstance().generateViewCode());
         startNode.setActions(defaultActions());
         startNode.setStrategies(defaultStrategies());
         startNode.setOrder(0);
@@ -97,6 +107,7 @@ public class StartNode extends BaseFlowNode implements IDisplayNode {
     public static StartNode formMap(Map<String, Object> map) {
         StartNode startNode = BaseFlowNode.fromMap(map, StartNode.class);
         startNode.setView((String) map.get("view"));
+        startNode.setCode((String) map.get("code"));
         return startNode;
     }
 
@@ -104,6 +115,7 @@ public class StartNode extends BaseFlowNode implements IDisplayNode {
     public Map<String, Object> toMap() {
         Map<String, Object> map = super.toMap();
         map.put("view", view);
+        map.put("code", code);
         return map;
     }
 

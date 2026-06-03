@@ -3,6 +3,7 @@ package com.codingapi.flow.node;
 import com.codingapi.flow.error.ErrorThrow;
 import com.codingapi.flow.exception.FlowValidationException;
 import com.codingapi.flow.form.FlowForm;
+import com.codingapi.flow.javscript.annotation.NodeViewScript;
 import com.codingapi.flow.manager.NodeStrategyManager;
 import com.codingapi.flow.manager.OperatorManager;
 import com.codingapi.flow.operator.IFlowOperator;
@@ -32,11 +33,20 @@ public abstract class BaseAuditNode extends BaseFlowNode implements IFlowNode {
     @Setter
     private String view;
 
+    /**
+     * 视图代码
+     */
+    @Getter
+    @Setter
+    @NodeViewScript
+    private String code;
+
 
     @Override
     public Map<String, Object> toMap() {
         Map<String, Object> map = super.toMap();
         map.put("view", view);
+        map.put("code", code);
         return map;
     }
 
@@ -45,6 +55,9 @@ public abstract class BaseAuditNode extends BaseFlowNode implements IFlowNode {
         super.verifyNode(form);
         if (!StringUtils.hasText(view)) {
             throw FlowValidationException.nodeRequired("view");
+        }
+        if (!StringUtils.hasText(code)) {
+            throw FlowValidationException.nodeRequired("code");
         }
     }
 
@@ -166,6 +179,7 @@ public abstract class BaseAuditNode extends BaseFlowNode implements IFlowNode {
     public static <T extends BaseAuditNode> T formMap(Map<String, Object> map, Class<T> clazz) {
         T node = BaseFlowNode.fromMap(map, clazz);
         node.setView((String) map.get("view"));
+        node.setCode((String) map.get("code"));
         return node;
     }
 
