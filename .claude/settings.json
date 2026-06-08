@@ -18,6 +18,7 @@
   },
   "enabledPlugins": {
     "commons@coding-marketplace": true,
-    "backend@coding-marketplace": true
+    "backend@coding-marketplace": true,
+    "pkr@pkr-marketplace": true
   }
 }

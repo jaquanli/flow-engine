@@ -40,3 +40,9 @@ build/
 .worktrees/
 
 ### fornt-end ###
+
+### codegraph ###
+.codegraph
+
+### serena ###
+.serena
